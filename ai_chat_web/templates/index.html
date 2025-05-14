@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 聊天</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <h1>AI 聊天</h1>
+        <div id="chat-box" class="chat-box"></div>
+        <input type="text" id="user-message" placeholder="请输入消息" />
+        <button onclick="sendMessage()">发送</button>
+    </div>
+
+    <script>
+        function sendMessage() {
+            const message = document.getElementById("user-message").value;
+            if (message) {
+                const chatBox = document.getElementById("chat-box");
+
+                // 显示用户消息
+                const userMessageDiv = document.createElement("div");
+                userMessageDiv.textContent = "你: " + message;
+                chatBox.appendChild(userMessageDiv);
+
+                // 清空输入框
+                document.getElementById("user-message").value = "";
+
+                // 连接到流式输出接口
+                const eventSource = new EventSource(`/chat_stream?message=${encodeURIComponent(message)}`);
+
+                eventSource.onmessage = function(event) {
+                    if (event.data === "[DONE]") {
+                        eventSource.close();
+                        return;
+                    }
+
+                    // 显示AI回复
+                    const aiMessageDiv = document.createElement("div");
+                    aiMessageDiv.textContent = "AI: " + event.data;
+                    chatBox.appendChild(aiMessageDiv);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                };
+
+                eventSource.onerror = function() {
+                    console.error("连接失败！");
+                    eventSource.close();
+                };
+            }
+        }
+    </script>
+</body>
+</html>
